@@ -138,12 +138,11 @@ class PagesMenuProxyWithFrontPage(PagesMenuProxy):
 
     def ancestors(self, model, obj):
         u"""Возвращает список родительских элементов, начиная с верхнего уровня"""
+        result = [item for item in obj.get_ancestors().exclude(status=0)]
         front_page = self.front_page(model, obj)
-        if front_page is None or front_page == obj:
-            insert = []
-        else:
-            insert = [front_page]
-        return insert + [item for item in obj.get_ancestors().exclude(status=0)]
+        if front_page is not None and front_page != obj and (not result or result[0] != front_page):
+            result.insert(0, front_page)
+        return result 
 
 
 def catalog_to_pages():
