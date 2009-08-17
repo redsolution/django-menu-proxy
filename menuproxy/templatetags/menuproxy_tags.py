@@ -39,7 +39,7 @@ def get_settings():
             item['point'] = import_item(point, 'mount point function')()
         for setting in settings:
             if setting['point'] == item['point']:
-                raise ImproperlyConfigured('menuproxy does`t support more than one similar point %r' % item['point'])
+                continue
         if point is None:
             settings.insert(0, item)
         else:
