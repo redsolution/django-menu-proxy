@@ -3,40 +3,6 @@
 class MenuProxy(object):
     u"""Базовый класс, описывающий метод получения данных из модели для построения меню"""
     
-    def _title(self, model, obj):
-        u"""Корректировка значения, возвращаемого функцией title"""
-        if obj is None:
-            return ''
-        result = self.title(model, obj)
-        if result is None:
-            return ''
-        return result
-
-    def _url(self, model, obj):
-        u"""Корректировка значения, возвращаемого функцией url"""
-        if obj is None:
-            return ''
-        result = self.url(model, obj)
-        if result is None:
-            return ''
-        return result
-
-    def _ancestors(self, model, obj):
-        u"""Корректировка значения, возвращаемого функцией ancestors"""
-        if obj is None:
-            return []
-        result = self.ancestors(model, obj)
-        if result is None:
-            return []
-        return result
-
-    def _children(self, model, obj, force):
-        u"""Корректировка значения, возвращаемого функцией children"""
-        result = self.children(model, obj, force)
-        if result is None:
-            return []
-        return result
-
     def title(self, model, obj):
         u"""Возвращает заголовок элемента"""
         return obj.title
@@ -90,6 +56,20 @@ class FlatMenuProxy(MenuProxy):
             model.objects.all()
         else:
             return None
+
+class EmptyMenuProxy(MenuProxy):
+    u"""Класс, возвращающий пустой список дочерних и родительских элементов"""
+
+    def ancestors(self, model, obj):
+        u"""Возвращает список родительских элементов, начиная с верхнего уровня"""
+        return None
+
+    def children(self, model, obj, force):
+        u"""Возвращает список дочерних элементов.
+        Если obj == None возвращает список элементов первого уровня.
+        force == False только при построении разворачивающегося меню и
+        только для элементов, не содержащих в потомках выбранный элемент"""
+        return None
 
 class PagesMenuProxy(MenuProxy):
     u"""Класс, описывающий метод получения данных из модели pages-cms"""
