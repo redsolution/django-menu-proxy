@@ -134,7 +134,6 @@ class MenuItem(object):
             self.proxy = self.settings.instead[obj]['proxy']
             self.model = self.settings.instead[obj]['model']
             self.obj = self.settings.instead[obj]['object']
-            print obj, ' -> ', self.obj
         else:
             self.proxy = proxy
             self.model = model
@@ -170,7 +169,7 @@ class MenuItem(object):
             until = self.settings.models[model]['object']
             items = get_ancestors(proxy, model, obj)
             items.reverse()
-            items.append(None) 
+            items.append(None)
             for item in items:
                 if item != until:
                     ancestors.insert(0, MenuItem(self.settings, proxy, model, item))
@@ -178,6 +177,7 @@ class MenuItem(object):
                     obj = self.settings.models[model]['point']
                     model = self.settings.models[model]['point'].__class__
                     proxy = self.settings.models[model]['proxy']
+                    ancestors.insert(0, MenuItem(self.settings, proxy, model, obj))
                     break
             else:
                 break
