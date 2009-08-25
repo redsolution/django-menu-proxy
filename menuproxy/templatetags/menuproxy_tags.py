@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django import template
+from django.http import HttpRequest
 from django.template.loader import render_to_string
 
 from menuproxy.utils import *
@@ -61,7 +62,7 @@ class MenuNode(template.Node):
         return render_to_string('menuproxy/%s_menu.html' % self.mode, {
             'current': current,
             'children': children,
-        }, context_instance=template.RequestContext(context['request']))
+        }, context_instance=template.RequestContext(context.get('request', HttpRequest())))
 
 
 def show_menu(parser, token):
@@ -154,7 +155,7 @@ class BreadCrumbNode(template.Node):
         return render_to_string('menuproxy/breadcrumb.html', {
             'breadcrumbs': breadcrumbs,
             'breadcrumb_between_char': between_char,
-        }, context_instance=template.RequestContext(context['request']))
+        }, context_instance=template.RequestContext(context.get('request', HttpRequest())))
 
 
 @register.tag
