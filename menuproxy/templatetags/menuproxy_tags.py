@@ -138,8 +138,6 @@ class BreadCrumbNode(template.Node):
                 current = None
         current = get_item(settings, current)
         ancestors = current.ancestors()
-        if current.obj is not None:
-            ancestors.append(current)
     
         try:
             between_char = self.between_char.resolve(context)
