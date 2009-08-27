@@ -98,7 +98,7 @@ class MenuSettings(object):
             if model in self.models:
                 raise ImproperlyConfigured('menuproxy does`t support more than one same model')
             else:
-                self.models[model] = {'proxy': proxy, 'object': obj, 'point': point, }
+                self.models[model] = {'proxy': proxy, 'object': obj, 'point': point, 'method': setting['method'], }
 
         if None not in self.root:
             raise ImproperlyConfigured('menuproxy must have setting with method: root')
@@ -169,15 +169,19 @@ class MenuItem(object):
             until = self.settings.models[model]['object']
             items = get_ancestors(proxy, model, obj)
             items.reverse()
-            items.append(None)
+            items.append(until)
             for item in items:
                 if item != until:
                     ancestors.insert(0, MenuItem(self.settings, proxy, model, item))
                 elif self.settings.models[model]['point'] is not None:
+                    method = self.settings.models[model]['method']
+                    if method == 'instead':
+                        ancestors.insert(0, MenuItem(self.settings, proxy, model, item))
                     obj = self.settings.models[model]['point']
                     model = self.settings.models[model]['point'].__class__
                     proxy = self.settings.models[model]['proxy']
-                    ancestors.insert(0, MenuItem(self.settings, proxy, model, obj))
+                    if method != 'instead':
+                        ancestors.insert(0, MenuItem(self.settings, proxy, model, obj))
                     break
             else:
                 break
