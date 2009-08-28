@@ -107,7 +107,7 @@ class PopNode(template.Node):
         pass
 
     def render(self, context):
-        context['pop_breadcrumb'] = True
+        context['pop_breadcrumb'] = context.get('pop_breadcrumb', 0) + 1
         return u''
 
 
@@ -144,11 +144,12 @@ class BreadCrumbNode(template.Node):
         except template.VariableDoesNotExist:
             between_char = None
 
-        breadcrumbs = context.get('insert_breadcrumb', []) + \
-            ancestors + context.get('append_breadcrumb', [])
+        breadcrumbs = ancestors
+        if 'pop_breadcrumb' in context:
+            breadcrumbs = breadcrumbs[:-context['pop_breadcrumb']]
 
-        if context.get('pop_breadcrumb', False):
-            breadcrumbs = breadcrumbs[:-1]
+        breadcrumbs = context.get('insert_breadcrumb', []) + \
+            breadcrumbs + context.get('append_breadcrumb', [])
 
         return render_to_string('menuproxy/breadcrumb.html', {
             'breadcrumbs': breadcrumbs,
