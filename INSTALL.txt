@@ -1,0 +1,50 @@
+h1. Install
+
+h2. Buildout
+
+<pre>
+[buildout]
+parts = ...
+        django-menu-proxy
+
+[django]
+extra-paths = ...
+              ${django-menu-proxy:location}
+
+[django-menu-proxy]
+recipe = zerokspot.recipe.git
+repository = git://verne.redsolution.ru/django-menu-proxy.git
+</pre>
+
+h2. settings.py
+
+<pre>
+INSTALLED_APPS = (
+...
+    'menuproxy',
+)
+...
+# MenuProxy settings
+MENU_PROXY_SETTINGS = [
+    {
+        'method': 'root',
+        'model': 'myapp.models.Page',
+        'proxy': 'menuproxy.proxies.PagesMenuProxy',
+    }, {
+        'method': 'append',
+        'model': 'myapp.models.News',
+        'proxy': 'menuproxy.proxies.FlatMenuProxy',
+        'point': 'menuproxy.points.get_news',
+    },
+]
+...
+</pre>
+
+h2. Templates
+
+<pre>
+{% load menuproxy_tags %}
+...
+<div id="menu">{% show_auto_menu current_page %}</div>
+<div id="breadcrumb">{% show_breadcrumbs current_page %}</div>
+</pre>
