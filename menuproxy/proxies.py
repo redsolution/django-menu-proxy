@@ -97,3 +97,17 @@ class ReverseProxy(EmptyProxy):
     def url(self, model, obj):
         u"""Возвращает url элемента"""
         return reverse(*self.args, **self.kwargs)
+
+
+class FilterProxy(MenuProxy):
+    u"""Класс, описывающий метод получения данных из модели и фильтровать список дочерних элементов"""
+
+    def children(self, model, obj, force):
+        u"""Возвращает список дочерних элементов.
+        Если obj == None возвращает список элементов первого уровня.
+        force == False только при построении разворачивающегося меню и
+        только для элементов, не содержащих в потомках выбранный элемент"""
+        if force:
+            return model.objects.filter(parent=obj).filter(*self.args, **self.kwargs)
+        else:
+            return None
