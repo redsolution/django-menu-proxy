@@ -3,49 +3,51 @@
 from django import conf
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
+import importpath
 
-def import_item(path, error_text):
-    u"""Импортирует по указанному пути. В случае ошибки генерируется исключение с указанным текстом"""
-    i = path.rfind('.')
-    module, attr = path[:i], path[i+1:]
-    try:
-        return getattr(__import__(module, {}, {}, ['']), attr)
-    except ImportError, e:
-        raise ImproperlyConfigured('Error importing %s %s: "%s"' % (error_text, path, e))
-
-def get_title(menu_proxy, model, obj):
+def get_title(menu_proxy, obj):
     u"""Корректировка значения, возвращаемого функцией title"""
     if obj is None:
         return u''
-    result = menu_proxy.title(model, obj)
+    result = menu_proxy.title(obj)
     if result is None:
         return u''
     return unicode(result)
 
-def get_url(menu_proxy, model, obj):
+def get_url(menu_proxy, obj):
     u"""Корректировка значения, возвращаемого функцией url"""
     if obj is None:
         return u''
-    result = menu_proxy.url(model, obj)
+    result = menu_proxy.url(obj)
     if result is None:
         return u''
     return unicode(result)
 
-def get_ancestors(menu_proxy, model, obj):
+def get_ancestors(menu_proxy, obj):
     u"""Корректировка значения, возвращаемого функцией ancestors"""
     if obj is None:
         return []
-    result = menu_proxy.ancestors(model, obj)
+    result = menu_proxy.ancestors(obj)
     if result is None:
         return []
     return [value for value in result]
 
-def get_children(menu_proxy, model, obj, force):
-    u"""Корректировка значения, возвращаемого функцией children"""
-    result = menu_proxy.children(model, obj, force)
+def get_children(menu_proxy, obj, force):
+    u"""Корректировка значения, возвращаемого функцией children или force"""
+    if force:
+        result = menu_proxy.force(obj)
+    else:
+        result = menu_proxy.children(obj)
     if result is None:
         return []
     return [value for value in result]
+
+def try_to_import(dictionary, key, exception_text):
+    u"""Если значение key задано, пытаемся импортировать указанный объект"""
+    value = setting.get(key, None)
+    if not value is None:
+        value = importpath(value, exception_text)
+    setting[key] = value
 
 class MenuSettings(object):
     u"""Класс для хранения настроек menuproxy в подготовленном формате"""
@@ -57,53 +59,41 @@ class MenuSettings(object):
     )
     
     def __init__(self):
-        self.root = {}
+        self.root = None
         self.instead = {}
         self.append = {}
         self.prepend = {}
-        self.models = {} # Используемые модели
+        self.settings = getattr(conf.settings, 'MENU_PROXY', {})
         
-        for setting in getattr(conf.settings, 'MENU_PROXY_SETTINGS', []):
+        for name, setting in self.settings.iteritems():
             if setting['method'] not in self.METHODS:
                 raise ImproperlyConfigured('menuproxy does`t support method: %s', setting['method'])
+            if 'proxy' not in setting:
+                raise ImproperlyConfigured('menuproxy need proxy for %s setting' % name)
 
-            model = import_item(setting['model'], 'model class')
-
-            proxy = import_item(setting['proxy'], 'MenuProxy class')()
-
-            
-            if setting.get('point', None) is None:
-                point = None
-            else:
-                point = import_item(setting['point'], 'mount point function')()
-
-            if setting.get('object', None) is None:
-                obj = None
-            else:
-                obj = import_item(setting['object'], 'mount object function')()
-                
+            setting['name'] = name
+            setting['inside'] = setting.get('inside', None)
+            try_to_import(setting, 'model', 'model class')
+            try_to_import(setting, 'point', 'mount point function')
+            try_to_import(setting, 'object', 'mount object function')
+            setting['proxy'] = importpath(setting['proxy'], 'MenuProxy class')(setting)
             if setting['method'] == 'root':
-                point = None
-            elif point is None:
-                continue # menuproxy must know the point for mounting, so skip it
-            
-            if setting['method'] == 'instead' and object is None:
-                continue # menuproxy must know the object for mounting, so skip it
+                if self.root is not None:
+                    raise ImproperlyConfigured('menuproxy does`t support more that one method "root"')
+                setting['inside'] = None
+                setting['point'] = None
+                root = setting
+            if setting['method'] == 'root':
+                key = (setting['inside'], setting['point'])
+                dictionary = getattr(self, setting['method'])
+                if key in dictionary:
+                    continue
+                dictionary[key] = setting
 
-            dictionary = getattr(self, setting['method'])
-            if point in dictionary:
-                continue
-            dictionary[point] = {'model': model, 'proxy': proxy, 'object': obj, }
+        if self.root is None:
+            raise ImproperlyConfigured('menuproxy must have setting with method "root"')
 
-            if model in self.models:
-                raise ImproperlyConfigured('menuproxy does`t support more than one same model')
-            else:
-                self.models[model] = {'proxy': proxy, 'object': obj, 'point': point, 'method': setting['method'], }
-
-        if None not in self.root:
-            raise ImproperlyConfigured('menuproxy must have setting with method: root')
-
-        self.top = get_children(self.root[None]['proxy'], self.root[None]['model'], None, True)
+        self.top = get_children(self.root['proxy'], self.root['model'], False)
         
         if getattr(conf.settings, 'MENU_PROXY_FRONT_PAGED', False) and self.top:
             self.front_page = self.top[0]
@@ -127,23 +117,22 @@ class MenuItem(object):
     
     active = False
     current = False
-
-    def __init__(self, settings, proxy, model, obj):
-        self.settings = settings
-        if obj in self.settings.instead:
-            self.proxy = self.settings.instead[obj]['proxy']
-            self.model = self.settings.instead[obj]['model']
-            self.obj = self.settings.instead[obj]['object']
-        else:
-            self.proxy = proxy
-            self.model = model
-            self.obj = obj
+    
+    def __init__(self, name, obj):
+        self.source = []
+        while (name, obj) in self.settings.instead:
+            self.source.append((name, obj))
+            instead = self.settings.instead[name, obj]
+            name = instead['inside']
+            obj = instead['object']
+        self.name = name
+        self.obj = obj
         
     def title(self):
         u"""Возвращает заголовок элемента меню"""
         if hasattr(self, '_title'):
             return getattr(self, '_title')
-        title = get_title(self.proxy, self.model, self.obj)
+        title = get_title(self.get('proxy'), self.obj)
         setattr(self, '_title', title)
         return title
             
@@ -151,7 +140,7 @@ class MenuItem(object):
         u"""Возвращает url элемента меню"""
         if hasattr(self, '_url'):
             return getattr(self, '_url')
-        url = get_url(self.proxy, self.model, self.obj)
+        url = get_url(get_settings().settings[self.name]['proxy'], self.obj)
         setattr(self, '_url', url)
         return url
 
@@ -160,38 +149,35 @@ class MenuItem(object):
         if hasattr(self, '_ancestors'):
             return getattr(self, '_ancestors')
         
+        settings = get_settings().settings
         ancestors = []
-        proxy = self.proxy
-        model = self.model
+        name = self.name
         obj = self.obj
-        ancestors = []
-        while model in self.settings.models:
-            until = self.settings.models[model]['object']
-            items = get_ancestors(proxy, model, obj)
+        while True:
+            until = self.get('object')
+            items = get_ancestors(settings[name]['proxy'], obj)
             items.reverse()
             items.append(until)
             for item in items:
                 if item != until:
-                    ancestors.insert(0, MenuItem(self.settings, proxy, model, item))
-                elif self.settings.models[model]['point'] is not None:
-                    method = self.settings.models[model]['method']
+                    ancestors.insert(0, MenuItem(name, item))
+                elif settings[name]['point'] is not None:
+                    method = settings[name]['method']
                     if method == 'instead':
-                        ancestors.insert(0, MenuItem(self.settings, proxy, model, item))
-                    obj = self.settings.models[model]['point']
-                    model = self.settings.models[model]['point'].__class__
-                    proxy = self.settings.models[model]['proxy']
+                        ancestors.insert(0, MenuItem(name, item))
+                    obj = settings[name]['point']
+                    name = settings[name]['inside']
                     if method != 'instead':
-                        ancestors.insert(0, MenuItem(self.settings, proxy, model, obj))
+                        ancestors.insert(0, MenuItem(name, obj))
                     break
             else:
                 break
-        if self.settings.front_page is not None:
-            if not ancestors or ancestors[0].obj != self.settings.front_page:
-                ancestors.insert(0, MenuItem(
-                    self.settings, 
-                    self.settings.root[None]['proxy'],
-                    self.settings.root[None]['model'],
-                    self.settings.front_page))
+            
+        front_page = get_settings().front_page
+        
+        if front_page is not None:
+            if not ancestors or ancestors[0].obj != front_page:
+                ancestors.insert(0, MenuItem(get_settings().root['name'], front_page))
         setattr(self, '_ancestors', ancestors)
         return ancestors
 
@@ -200,47 +186,23 @@ class MenuItem(object):
         if hasattr(self, '_children'):
             return getattr(self, '_children')
         
+        key = (self.name, self.obj)
+        prepend = get_settings().prepend
+        append = get_settings().append
         children = []
-        if self.obj in self.settings.prepend:
+        if key in prepend:
             children += [
-                MenuItem(
-                    self.settings, 
-                    self.settings.prepend[self.obj]['proxy'], 
-                    self.settings.prepend[self.obj]['model'], 
-                    item
-                ) for item in get_children(
-                    self.settings.prepend[self.obj]['proxy'], 
-                    self.settings.prepend[self.obj]['model'], 
-                    self.settings.prepend[self.obj]['object'],
-                    force
-                )
+                MenuItem(prepend[key]['name'], item) for item in get_children(
+                    prepend[key]['proxy'], prepend[key]['object'], force)
             ]
         children += [
-            MenuItem(
-                self.settings, 
-                self.proxy, 
-                self.model, 
-                item
-            ) for item in get_children(
-                self.proxy, 
-                self.model, 
-                self.obj,
-                force
-            )
+            MenuItem(self.name) for item in get_children(
+                get_settings().settings[self.name]['proxy'], self.obj, force)
         ]
-        if self.obj in self.settings.append:
+        if key in append:
             children += [
-                MenuItem(
-                    self.settings, 
-                    self.settings.append[self.obj]['proxy'], 
-                    self.settings.append[self.obj]['model'], 
-                    item
-                ) for item in get_children(
-                    self.settings.append[self.obj]['proxy'], 
-                    self.settings.append[self.obj]['model'], 
-                    self.settings.append[self.obj]['object'],
-                    force
-                )
+                MenuItem(prepend[key]['name'], item) for item in get_children(
+                    append[key]['proxy'], append[key]['object'], force)
             ]
 
         setattr(self, '_children', children)
@@ -252,8 +214,8 @@ def get_item(settings, obj):
     if isinstance(obj, MenuItem):
         return obj
     if obj is None:
-        model = settings.root[None]['model']
-        proxy = settings.root[None]['proxy']
+        model = settings.root['model']
+        proxy = settings.root['proxy']
     else:
         model = obj.__class__
         proxy = settings.models[model]['proxy']
