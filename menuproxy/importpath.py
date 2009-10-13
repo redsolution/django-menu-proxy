@@ -27,7 +27,7 @@ def importpath(path, error_text=None):
     attrs = []                                                                                        
     exception = None                                                                                  
     while True:                                                                                       
-        try:                                                                                          
+        try:
             result = _importpath(path, error_text)                                                    
         except (ImportError, ImproperlyConfigured), e:                                                
             if exception is None:                                                                     

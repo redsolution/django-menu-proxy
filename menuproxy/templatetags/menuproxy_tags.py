@@ -9,8 +9,12 @@ from menuproxy.utils import *
 register = template.Library()
 
 class MenuNode(template.Node):
-    def __init__(self, tag_name, current=None, target=None):
+    def __init__(self, tag_name, setting=None, current=None, target=None):
         self.mode = tag_name.split('_')[1]
+        if setting is None:
+            self.setting = None
+        else:
+            self.setting = template.Variable(setting)
         if current is None:
             self.current = None
         else:
@@ -21,8 +25,14 @@ class MenuNode(template.Node):
             self.target = template.Variable(target)
         
     def render(self, context):
-        settings = get_settings()
-
+        if self.setting is None:
+            setting = None
+        else:
+            try:
+                setting = self.setting.resolve(context)
+            except template.VariableDoesNotExist:
+                setting = None
+                
         if self.current is None:
             current = None
         else:
@@ -30,7 +40,7 @@ class MenuNode(template.Node):
                 current = self.current.resolve(context)
             except template.VariableDoesNotExist:
                 current = None
-        current = get_item(settings, current)
+        current = MenuItem(setting, current)
         ancestors = current.ancestors()
         ancestors.append(current)
         ancestors_as_objects = [ancestor.obj
@@ -43,16 +53,19 @@ class MenuNode(template.Node):
                 target = self.target.resolve(context)
             except template.VariableDoesNotExist:
                 target = None
-        target = get_item(settings, target)
+        if target is None:
+            target = MenuItem() 
+        if not isinstance(target, MenuItem):
+            raise template.TemplateSyntaxError, "show_menu tag can use only MenuItem as target argument"
         
         if self.mode == 'auto' and target.obj is not None:
             if current.obj is None:
-                force = False
+                lasy = True
             else:
-                force = target.obj in ancestors_as_objects
+                lasy = target.obj not in ancestors_as_objects
         else:
-            force = True
-        children = target.children(force)
+            lasy = False
+        children = target.children(lasy)
         for child in children:
             if child.obj in ancestors_as_objects:
                 child.active = True
@@ -60,6 +73,7 @@ class MenuNode(template.Node):
                 child.current = True
 
         return render_to_string('menuproxy/%s_menu.html' % self.mode, {
+            'setting': setting,
             'current': current,
             'children': children,
         }, context_instance=template.RequestContext(context.get('request', HttpRequest())))
@@ -67,8 +81,8 @@ class MenuNode(template.Node):
 
 def show_menu(parser, token):
     splited = token.split_contents()
-    if len(splited) > 3:
-        raise template.TemplateSyntaxError, "%r tag requires maximum 2 arguments: current and target" % splited[0]
+    if len(splited) > 4:
+        raise template.TemplateSyntaxError, "%r tag requires maximum 3 arguments: setting, current, target" % splited[0]
     return MenuNode(*splited)
     
 register.tag('show_main_menu', show_menu)
@@ -120,7 +134,11 @@ def pop_breadcrumb(parser, token):
 
 
 class BreadCrumbNode(template.Node):
-    def __init__(self, tag_name, current=None, between_char='" →"'):
+    def __init__(self, tag_name, setting, current=None, between_char='" →"'):
+        if setting is None:
+            self.setting = None
+        else:
+            self.setting = template.Variable(setting)
         if current is None:
             self.current = None
         else:
@@ -128,7 +146,13 @@ class BreadCrumbNode(template.Node):
         self.between_char = template.Variable(between_char)
         
     def render(self, context):
-        settings = get_settings()
+        if self.setting is None:
+            setting = None
+        else:
+            try:
+                setting = self.setting.resolve(context)
+            except template.VariableDoesNotExist:
+                setting = None
         if self.current is None:
             current = None
         else:
@@ -136,7 +160,7 @@ class BreadCrumbNode(template.Node):
                 current = self.current.resolve(context)
             except template.VariableDoesNotExist:
                 current = None
-        current = get_item(settings, current)
+        current = MenuItem(setting, current)
         ancestors = current.ancestors()
     
         try:
@@ -160,6 +184,6 @@ class BreadCrumbNode(template.Node):
 @register.tag
 def show_breadcrumbs(parser, token):
     splited = token.split_contents()
-    if len(splited) > 3:
-        raise template.TemplateSyntaxError, "%r tag requires maximum 2 arguments: current and between_char" % splited[0]
+    if len(splited) > 4:
+        raise template.TemplateSyntaxError, "%r tag requires maximum 2 arguments: setting current and between_char" % splited[0]
     return BreadCrumbNode(*splited)

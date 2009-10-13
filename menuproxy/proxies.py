@@ -4,14 +4,18 @@ from django.core.urlresolvers import reverse
 class MenuProxy(object):
     u"""Базовый класс, описывающий метод получения данных из модели для построения меню"""
     
-    def __init__(self, model=None, children_filter=None, children_exclude=None,
-        ancestors_filter=None, ancestors_exclude=None, **kwargs):
+    def __init__(self, model=None, children_filter={}, children_exclude={},
+        ancestors_filter={}, ancestors_exclude={}, **other):
         self.model = model
-        self.filter = filter
-        self.exclude = exclude
+        self.children_filter = children_filter
+        self.children_exclude = children_exclude
+        self.ancestors_filter = ancestors_filter
+        self.ancestors_exclude = ancestors_exclude
     
     def title(self, obj):
         u"""Возвращает заголовок элемента"""
+        if obj is None:
+            return None
         if callable(obj.title):
             return obj.title()
         else:
@@ -19,18 +23,22 @@ class MenuProxy(object):
 
     def url(self, obj):
         u"""Возвращает url элемента"""
+        if obj is None:
+            return None
         return obj.get_absolute_url()
 
     def ancestors(self, obj):
         u"""Возвращает список родительских элементов, начиная с верхнего уровня"""
-        return obj.get_ancestors().filter(self.ancestors_filter).exclude(self.ancestors_exclude)
+        if obj is None:
+            return None
+        return obj.get_ancestors().filter(**self.ancestors_filter).exclude(**self.ancestors_exclude)
 
     def children(self, obj):
         u"""Возвращает список дочерних элементов.
         Если obj == None возвращает список элементов верхнего уровня"""
-        return model.objects.filter(parent=obj).filter(self.children_filter).exclude(self.children_exclude)
+        return self.model.objects.filter(parent=obj).filter(**self.children_filter).exclude(**self.children_exclude)
     
-    def force_children(self, obj):
+    def lasy_children(self, obj):
         u"""Возвращает список дочерних элементов,
         если объект не содержится в потомках выбранный элемент"""
         return None
@@ -49,7 +57,7 @@ class FlatProxy(MenuProxy):
         force == False только при построении разворачивающегося меню и
         только для элементов, не содержащих в потомках выбранный элемент"""
         if obj is None:
-            model.objects.filter(self.filter).filter(self.children_filter).exclude(self.children_exclude)
+            self.model.objects.filter(self.filter).filter(**self.children_filter).exclude(**self.children_exclude)
         else:
             return None
 
@@ -68,15 +76,24 @@ class EmptyProxy(MenuProxy):
 class ReverseProxy(MenuProxy):
     u"""Класс, описывающий метод получения данных из модели pages-cms"""
 
-    def __init__(self, args=[], kwargs={}, **kwargs):
+    def __init__(self, title_text=None, get_title=None, args=[], kwargs={}, **other):
+        self.title_text = title_text
+        self.get_title = get_title
         self.args = args
         self.kwargs = kwargs
     
     def title(self, obj):
         u"""Возвращает заголовок элемента"""
-        return u''
+        if self.get_title is None:
+            return self.title
+        from importpath import importpath
+        title = importpath(self.get_title)
+        if callable(title):
+            return title()
+        else:
+            return title
 
-    def url(self, model, obj):
+    def url(self, obj):
         u"""Возвращает url элемента"""
         return reverse(*self.args, **self.kwargs)
 
