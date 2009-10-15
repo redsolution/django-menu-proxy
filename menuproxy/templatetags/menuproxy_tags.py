@@ -22,8 +22,8 @@ class CurrentNode(template.Node):
         self.obj = obj
     
     def render(self, context):
-        rule = get_value(self.rule, content)
-        obj = get_value(self.obj, content)
+        rule = get_value(self.rule, context)
+        obj = get_value(self.obj, context)
         if rule is None:
             context['current_menuproxy'] = None
         else:
@@ -36,7 +36,7 @@ def current_menu_item(parser, token):
     splited = token.split_contents()
     if len(splited) > 3:
         raise template.TemplateSyntaxError, "%r tag requires maximum 2 arguments: rule, object" % splited[0]
-    return MenuNode(*splited[1:])
+    return CurrentNode(*splited[1:])
 
 
 class MenuNode(template.Node):
@@ -52,22 +52,22 @@ class MenuNode(template.Node):
 
         current = context.get('current_menuproxy', None)
         if current is not None:
-            ancestors_objects = [ancestor.obj
+            keys = [(ancestor.name, ancestor.obj)
                 for ancestor in current.ancestors_for_menu()]
         else:
-            ancestors_objects = []
+            keys = []
             
 
         if self.mode == 'auto' and target.obj is not None:
-            lasy = target.obj not in ancestors_objects
+            lasy = (target.name, target.obj) not in keys
         else:
             lasy = False
 
         children = target.children(lasy)
         for child in children:
-            if child.obj in ancestors_objects:
+            if (child.name, child.obj) in keys:
                 child.active = True
-            if current is not None and child.obj == current.obj:
+            if current is not None and (child.name, child.obj) == (current.name, current.obj):
                 child.current = True
 
         return render_to_string('menuproxy/%s_menu.html' % self.mode, {
