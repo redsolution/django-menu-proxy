@@ -52,10 +52,13 @@
 Контакты
 
 Для реализации мы напишем:
-MENU_PROXY = {}
-MENU_PROXY['pages'] = {
+MENU_PROXY_RULES = {}
+MENU_PROXY_RULES['pages'] = {
     'method': 'root',
-    'proxy': 'menuproxy.proxies.PageProxy',
+    'proxy': 'menuproxy.proxies.MenuProxy',
+    'model': 'pages.models.Page',
+    'children_filter': {'status': 1, },
+    'ancestors_exclude': {'status': 0, },
 }
 
 Метод 'root' указывает, что правило должно быть использовано в качестве корня меню.
@@ -67,7 +70,7 @@ MENU_PROXY['pages'] = {
 Мы хотим, лишь указать местоположение в меню и название пункта.
 
 Для реализации мы напишем:
-MENU_PROXY['search'] = {
+MENU_PROXY_RULES['search'] = {
     'method': 'instead',
     'inside': 'pages',
     'point': 'menuproxy.points.get_search_page',
@@ -92,7 +95,7 @@ MENU_PROXY['search'] = {
 и содержать пользовательский контент. 
 
 Для реализации мы напишем:
-MENU_PROXY['catalog'] = {
+MENU_PROXY_RULES['catalog'] = {
     'method': 'append',
     'inside': 'pages',
     'point': 'menuproxy.points.get_catalog_page',
@@ -109,7 +112,7 @@ MENU_PROXY['catalog'] = {
 Мы хотим, чтобы сама страница "Новости" содержала архив новостей.
 
 Для реализации мы напишем:
-MENU_PROXY['news_archive'] = {
+MENU_PROXY_RULES['news_archive'] = {
     'method': 'instead',
     'inside': 'pages',
     'point': 'menuproxy.points.get_news_page',
@@ -122,7 +125,7 @@ MENU_PROXY['news_archive'] = {
 Мы хотим, чтобы внутри раздела "Новости" содержались новости.
 
 Для реализации мы напишем:
-MENU_PROXY['news_detail'] = {
+MENU_PROXY_RULES['news_detail'] = {
     'method': 'append',
     'inside': 'news_archive',
     'proxy': 'menuproxy.proxies.FlatProxy',

@@ -8,81 +8,79 @@ from menuproxy.utils import *
 
 register = template.Library()
 
+def get_value(string, context):
+    if string is None:
+        return None
+    try:
+        return template.Variable(string).resolve(context)
+    except template.VariableDoesNotExist:
+        return None
+
+class CurrentNode(template.Node):
+    def __init__(self, rule=None, obj=None):
+        self.rule = rule
+        self.obj = obj
+    
+    def render(self, context):
+        rule = get_value(self.rule, content)
+        obj = get_value(self.obj, content)
+        if rule is None:
+            context['current_menuproxy'] = None
+        else:
+            context['current_menuproxy'] = MenuItem(rule, obj)
+        return ''
+
+@register.tag
+def current_menu_item(parser, token):
+    u"""Устанавливаем текущий элемент в меню"""
+    splited = token.split_contents()
+    if len(splited) > 3:
+        raise template.TemplateSyntaxError, "%r tag requires maximum 2 arguments: rule, object" % splited[0]
+    return MenuNode(*splited[1:])
+
+
 class MenuNode(template.Node):
-    def __init__(self, tag_name, setting=None, current=None, target=None):
+    def __init__(self, tag_name, rule=None, obj=None):
         self.mode = tag_name.split('_')[1]
-        if setting is None:
-            self.setting = None
-        else:
-            self.setting = template.Variable(setting)
-        if current is None:
-            self.current = None
-        else:
-            self.current = template.Variable(current)
-        if target is None:
-            self.target = None
-        else:
-            self.target = template.Variable(target)
+        self.rule = rule
+        self.obj = obj
         
     def render(self, context):
-        if self.setting is None:
-            setting = None
-        else:
-            try:
-                setting = self.setting.resolve(context)
-            except template.VariableDoesNotExist:
-                setting = None
-                
-        if self.current is None:
-            current = None
-        else:
-            try:
-                current = self.current.resolve(context)
-            except template.VariableDoesNotExist:
-                current = None
-        current = MenuItem(setting, current)
-        ancestors = current.ancestors()
-        ancestors.append(current)
-        ancestors_as_objects = [ancestor.obj
-            for ancestor in ancestors]
+        rule = get_value(self.rule, context)
+        obj = get_value(self.obj, context)
+        target = MenuItem(rule, obj)
 
-        if self.target is None:
-            target = None
+        current = context.get('current_menuproxy', None)
+        if current is not None:
+            ancestors_objects = [ancestor.obj
+                for ancestor in current.ancestors_for_menu()]
         else:
-            try:
-                target = self.target.resolve(context)
-            except template.VariableDoesNotExist:
-                target = None
-        if target is None:
-            target = MenuItem() 
-        if not isinstance(target, MenuItem):
-            raise template.TemplateSyntaxError, "show_menu tag can use only MenuItem as target argument"
-        
+            ancestors_objects = []
+            
+
         if self.mode == 'auto' and target.obj is not None:
-            if current.obj is None:
-                lasy = True
-            else:
-                lasy = target.obj not in ancestors_as_objects
+            lasy = target.obj not in ancestors_objects
         else:
             lasy = False
+
         children = target.children(lasy)
         for child in children:
-            if child.obj in ancestors_as_objects:
+            if child.obj in ancestors_objects:
                 child.active = True
-            if child.obj == current.obj:
+            if current is not None and child.obj == current.obj:
                 child.current = True
 
         return render_to_string('menuproxy/%s_menu.html' % self.mode, {
-            'setting': setting,
-            'current': current,
             'children': children,
+            'current_menuproxy': current,
         }, context_instance=template.RequestContext(context.get('request', HttpRequest())))
 
 
 def show_menu(parser, token):
+    u"""Отображаем меню, начиная с указанного элемента"""
     splited = token.split_contents()
-    if len(splited) > 4:
-        raise template.TemplateSyntaxError, "%r tag requires maximum 3 arguments: setting, current, target" % splited[0]
+    if len(splited) > 3:
+        raise template.TemplateSyntaxError, "%r tag requires maximum 3 arguments: rule, obj" % splited[0]
     return MenuNode(*splited)
     
 register.tag('show_main_menu', show_menu)
@@ -134,40 +132,18 @@ def pop_breadcrumb(parser, token):
 
 
 class BreadCrumbNode(template.Node):
-    def __init__(self, tag_name, setting, current=None, between_char='" →"'):
-        if setting is None:
-            self.setting = None
-        else:
-            self.setting = template.Variable(setting)
-        if current is None:
-            self.current = None
-        else:
-            self.current = template.Variable(current)
-        self.between_char = template.Variable(between_char)
+    def __init__(self, between_char='" →"'):
+        self.between_char = between_char
         
     def render(self, context):
-        if self.setting is None:
-            setting = None
+        between_char = get_value(self.between_char, context)
+        
+        current = context.get('current_menuproxy', None)
+        if current is not None:
+            ancestors = current.ancestors()
         else:
-            try:
-                setting = self.setting.resolve(context)
-            except template.VariableDoesNotExist:
-                setting = None
-        if self.current is None:
-            current = None
-        else:
-            try:
-                current = self.current.resolve(context)
-            except template.VariableDoesNotExist:
-                current = None
-        current = MenuItem(setting, current)
-        ancestors = current.ancestors()
+            ancestors = []
     
-        try:
-            between_char = self.between_char.resolve(context)
-        except template.VariableDoesNotExist:
-            between_char = None
-
         breadcrumbs = ancestors
         if 'pop_breadcrumb' in context:
             breadcrumbs = breadcrumbs[:-context['pop_breadcrumb']]

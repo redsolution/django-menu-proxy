@@ -135,6 +135,7 @@ class MenuItem(object):
             obj = instead['object']
         self.name = name
         self.obj = obj
+        self.front_paged_ancestors = False
         
     def title(self):
         u"""Возвращает заголовок элемента меню"""
@@ -182,8 +183,18 @@ class MenuItem(object):
             
         if self.settings.front_page is not None:
             if not ancestors or ancestors[0].obj != self.settings.front_page:
+                self.front_paged_ancestors = True
                 ancestors.insert(0, MenuItem(self.settings.root['name'], self.settings.front_page))
         setattr(self, '_ancestors', ancestors)
+        return ancestors
+    
+    def ancestors_for_menu(self):
+        ancestors = self.ancestors()
+        if self.front_paged_ancestors:
+            ancestors = ancestors[1:]
+        else:
+            ancestors = ancestors[:]
+        ancestors.append(self)
         return ancestors
 
     def children(self, lasy):
