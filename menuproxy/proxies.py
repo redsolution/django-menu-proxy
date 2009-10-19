@@ -57,7 +57,7 @@ class FlatProxy(MenuProxy):
         force == False только при построении разворачивающегося меню и
         только для элементов, не содержащих в потомках выбранный элемент"""
         if obj is None:
-            self.model.objects.filter(self.filter).filter(**self.children_filter).exclude(**self.children_exclude)
+            return self.model.objects.filter(**self.children_filter).exclude(**self.children_exclude)
         else:
             return None
 

@@ -57,13 +57,22 @@ MENU_PROXY_RULES['pages'] = {
     'method': 'root',
     'proxy': 'menuproxy.proxies.MenuProxy',
     'model': 'pages.models.Page',
-    'children_filter': {'status': 1, },
-    'ancestors_exclude': {'status': 0, },
 }
 
 Метод 'root' указывает, что правило должно быть использовано в качестве корня меню.
-Класс PageProxy описывает метод полученя заголовка, url-а, докерних
-и родительских элементов, для указанного объекта.
+Класс MenuProxy описывает метод полученя заголовка, url-а, дочерних
+и родительских элементов, для объектов указанной модели.
+MenuProxy предпологает, что у каждого элемента есть поле parent и метод get_ancestors.
+
+MenuProxy позволяет накладывать фильтры и исключать объкты из query_set-ов
+дочерних элементов и списка родительских объектов:
+MENU_PROXY_RULES['pages'] = {
+    'method': 'root',
+    'proxy': 'menuproxy.proxies.MenuProxy',
+    'model': 'pages.models.Page',
+    'children_filter': {'status': 1, },
+    'ancestors_exclude': {'status': 0, },
+}
 
 
 Мы не хотим, чтобы сама страница с контентом "Поиск" существовала.
@@ -75,10 +84,10 @@ MENU_PROXY_RULES['search'] = {
     'inside': 'pages',
     'point': 'menuproxy.points.get_search_page',
     'proxy': 'menuproxy.proxies.ReverseProxy',
-    'kwargs': {
-        'viewname': 'search',
-    }
+    'args': ['search', ],
+    'get_title': 'menuproxy.points.get_search_name',
 }
+
 Метод 'instead' указывает, что правило будет заменять элемент в меню.
 Значение аргумента 'inside' указывает на правило,
 для которого будет производиться замена.
@@ -86,6 +95,8 @@ MENU_PROXY_RULES['search'] = {
 вместо которой будет отображаться элемент.
 Класс ReverseProxy позволяет вызвать функцию django.core.urlresolvers.reverse
 для получения ссылки на объект и передать ей аргументы 'args' и 'kwargs'.
+'get_title' указывает функцию для получения имени пункта меню
+(по умолчанию берется заголовок заменяемой страницы).
 
 
 Страница "Каталог" нам нужна, на ней будет размещаться не сам каталог,
@@ -99,10 +110,8 @@ MENU_PROXY_RULES['catalog'] = {
     'method': 'append',
     'inside': 'pages',
     'point': 'menuproxy.points.get_catalog_page',
-    'proxy': 'menuproxy.proxies.FilterProxy',
-    'kwargs': {
-        'show': True,
-    }
+    'proxy': 'menuproxy.proxies.MenuProxy',
+    'children_filter': {'show': True, },
 }
 
 Метод 'append' указывает, что правило потомки объекта будут добавлять к потомкам 'point'.
@@ -117,9 +126,8 @@ MENU_PROXY_RULES['news_archive'] = {
     'inside': 'pages',
     'point': 'menuproxy.points.get_news_page',
     'proxy': 'menuproxy.proxies.ReverseProxy',
-    'kwargs': {
-        'viewname': 'news_archive',
-    }
+    'args': ['news_archive_index', ],
+    'get_title': 'menuproxy.points.get_news_name',
 }
 
 Мы хотим, чтобы внутри раздела "Новости" содержались новости.
@@ -129,13 +137,30 @@ MENU_PROXY_RULES['news_detail'] = {
     'method': 'append',
     'inside': 'news_archive',
     'proxy': 'menuproxy.proxies.FlatProxy',
+    'model': 'easy_news.models.News',
+    'children_filter': {'show': True, },
 }
 
-Класс FlatProxy позволяет отображать 
-Если 'point' не указано, используется
+Класс FlatProxy позволяет отображать список всех элементов в моделе. 
+Список родителей всегда пуст.
 
-Метод 'instead' указывает, что правило будет заменять элемент в меню.
-Функция get_search_page должна возвращать страницу,
-вместо которой будет отображаться элемент.
-Класс ReverseProxy позволяет вызвать функцию django.core.urlresolvers.reverse
-для получения ссылки на объект и передать ей аргументы 'args' и 'kwargs'.
+
+Для отображения меню в шаблон добавим
+{% load menuproxy_tags %}
+{% show_main_menu %}
+Это позволит отобразить все элементы меню верхнего уровня.
+
+Для того, чтобы menuproxy могло подсветить текущий элемент в меню:
+{% show_main_menu 'pages' current_page %}
+
+Если мы хотим отобразить полный список всех элементов меню:
+{% show_full_menu 'pages' current_page %}
+
+Для отображения только тех разделов, внутри которых находится текущая страница:
+{% show_auto_menu  %}
+
+Для отображения меню для вьюхи поиска в её шаблоне укажим:
+{% show_auto_menu 'search' %}
+
+Для построения breadcrumb-ов:
+{% show_breadcrumbs 'pages' current_page %}

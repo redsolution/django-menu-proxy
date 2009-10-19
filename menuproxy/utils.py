@@ -101,8 +101,10 @@ class MenuSettings(object):
         
         if getattr(conf.settings, 'MENU_PROXY_FRONT_PAGED', True) and self.top:
             self.front_page = self.top[0]
+            self.front_name = self.root['name']
         else:
             self.front_page = None
+            self.front_name = None
 
 
 def get_settings():
@@ -165,26 +167,23 @@ class MenuItem(object):
             until = self.settings.rules[name]['object']
             items = get_ancestors(self.settings.rules[name]['proxy'], obj)
             items.reverse()
-            items.append(until)
             for item in items:
+                ancestors.insert(0, MenuItem(name, item))
                 if item != until:
-                    ancestors.insert(0, MenuItem(name, item))
-                elif self.settings.rules[name]['point'] is not None:
-                    method = self.settings.rules[name]['method']
-                    if method == 'instead':
-                        ancestors.insert(0, MenuItem(name, item))
-                    obj = self.settings.rules[name]['point']
-                    name = self.settings.rules[name]['inside']
-                    if method != 'instead':
-                        ancestors.insert(0, MenuItem(name, obj))
                     break
-            else:
+            method = self.settings.rules[name]['method']
+            if method == 'root':
                 break
+            obj = self.settings.rules[name]['point']
+            name = self.settings.rules[name]['inside']
+            if method != 'instead':
+                ancestors.insert(0, MenuItem(name, obj))
             
         if self.settings.front_page is not None:
             if not ancestors or ancestors[0].obj != self.settings.front_page:
-                self.front_paged_ancestors = True
-                ancestors.insert(0, MenuItem(self.settings.root['name'], self.settings.front_page))
+                if (self.settings.front_name, self.settings.front_page) != (self.name, self.obj):
+                    self.front_paged_ancestors = True
+                    ancestors.insert(0, MenuItem(self.settings.root['name'], self.settings.front_page))
         setattr(self, '_ancestors', ancestors)
         return ancestors
     
@@ -217,7 +216,7 @@ class MenuItem(object):
         ]
         if key in append:
             children += [
-                MenuItem(prepend[key]['name'], item) for item in get_children(
+                MenuItem(append[key]['name'], item) for item in get_children(
                     append[key]['proxy'], append[key]['object'], lasy)
             ]
 
