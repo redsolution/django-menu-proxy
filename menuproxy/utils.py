@@ -169,7 +169,7 @@ class MenuItem(object):
             items.reverse()
             for item in items:
                 ancestors.insert(0, MenuItem(name, item))
-                if item != until:
+                if item == until:
                     break
             method = self.settings.rules[name]['method']
             if method == 'root':
