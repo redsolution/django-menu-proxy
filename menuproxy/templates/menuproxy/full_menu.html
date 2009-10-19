@@ -4,7 +4,7 @@
         {% for child in children %}
             <li class="{% if child.active %}active_menu{% endif %}{% if child.current %} current_menu{% endif %}{% if forloop.first %} first_menu{% endif %}{% if forloop.last %} last_menu{% endif %}">
                 <a href="{{ child.url }}">{{ child.title }}</a>
-                {% show_full_menu child.name child.obj %}                  
+                {% show_full_menu current.name current.obj child.name child.obj %}                  
             </li>
         {% endfor %}
     </ul>
