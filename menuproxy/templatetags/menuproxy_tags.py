@@ -18,27 +18,35 @@ def get_value(string, context):
 
 
 class MenuNode(template.Node):
-    def __init__(self, tag_name, current_rule=None, current_obj=None, target_rule=None, target_obj=None):
+    def __init__(self, tag_name, current_rule=None, current_obj=None, target_rule=None, target_obj=None, proxy=False):
         self.mode = tag_name.split('_')[1]
         self.current_rule = current_rule
         self.current_obj = current_obj
         self.target_rule = target_rule
         self.target_obj = target_obj
+        self.proxy = proxy
         
     def render(self, context):
-        current_rule = get_value(self.current_rule, context)
-        current_obj = get_value(self.current_obj, context)
-        if current_rule is None:
-            current = None
+        if self.proxy:
+            current = get_value(self.current_rule, context)
+            target = get_value(self.current_obj, context)
+        else:
+            current_rule = get_value(self.current_rule, context)
+            current_obj = get_value(self.current_obj, context)
+            if current_rule is None:
+                current = None
+            else:
+                current = MenuItem(current_rule, current_obj)
+
+            target_rule = get_value(self.target_rule, context)
+            target_obj = get_value(self.target_obj, context)
+            target = MenuItem(target_rule, target_obj)
+
+        if current is None:
             keys = []
         else:
-            current = MenuItem(current_rule, current_obj)
             keys = [(ancestor.name, ancestor.obj)
                 for ancestor in current.ancestors_for_menu()]
-
-        target_rule = get_value(self.target_rule, context)
-        target_obj = get_value(self.target_obj, context)
-        target = MenuItem(target_rule, target_obj)
 
         if self.mode == 'auto' and target.obj is not None:
             lasy = (target.name, target.obj) not in keys
@@ -61,13 +69,16 @@ class MenuNode(template.Node):
 def show_menu(parser, token):
     u"""Отображаем меню, начиная с указанного элемента"""
     splited = token.split_contents()
-    if len(splited) - 1 not in [0, 2, 4]:
-        raise template.TemplateSyntaxError, "%r tag requires 0, 2 or 4 arguments: [current_rule current_obj [target_rule target_obj]]" % splited[0]
-    return MenuNode(*splited)
+    if len(splited) - 1 > 4:
+        raise template.TemplateSyntaxError, "%r tag requires maximum 4 arguments: current_rule current_obj target_rule target_obj" % splited[0]
+    return MenuNode(*splited, **{'proxy': splited[0].endswith('for_proxy')})
     
 register.tag('show_main_menu', show_menu)
 register.tag('show_full_menu', show_menu)
 register.tag('show_auto_menu', show_menu)
+register.tag('show_main_menu_for_proxy', show_menu)
+register.tag('show_full_menu_for_proxy', show_menu)
+register.tag('show_auto_menu_for_proxy', show_menu)
 
 class MakeBreadcrumbNode(template.Node):
     def __init__(self, current_rule=None, current_obj=None):
@@ -88,8 +99,8 @@ class MakeBreadcrumbNode(template.Node):
 @register.tag
 def make_breadcrumb(parser, token):
     splited = token.split_contents()
-    if len(splited) - 1 not in [0, 2]:
-        raise template.TemplateSyntaxError, "%r tag requires 0 or 2 arguments: [current_rule current_obj]" % splited[0]
+    if len(splited) - 1 > 2:
+        raise template.TemplateSyntaxError, "%r tag requires maximum  2 arguments: current_rule current_obj" % splited[0]
     return MakeBreadcrumbNode(*splited[1:])
 
 class ActionBreadcrumbNode(template.Node):
@@ -165,6 +176,6 @@ class BreadcrumbNode(template.Node):
 @register.tag
 def show_breadcrumbs(parser, token):
     splited = token.split_contents()
-    if len(splited) - 1 not in [0, 2, 3]:
-        raise template.TemplateSyntaxError, "%r tag requires 0, 2 or 3 arguments: [current_rule current_obj [between_char]]" % splited[0]
+    if len(splited) - 1 > 3:
+        raise template.TemplateSyntaxError, "%r tag requires maximum 3 arguments: current_rule current_obj between_char" % splited[0]
     return BreadcrumbNode(*splited[1:])
