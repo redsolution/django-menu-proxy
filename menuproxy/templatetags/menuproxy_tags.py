@@ -63,6 +63,7 @@ class MenuNode(template.Node):
         return render_to_string('menuproxy/%s_menu.html' % self.mode, {
             'children': children,
             'current': current,
+            'target': target,
         }, context_instance=template.RequestContext(context.get('request', HttpRequest())))
 
 
@@ -168,6 +169,7 @@ class BreadcrumbNode(template.Node):
                 ancestors = current.ancestors()
 
         return render_to_string('menuproxy/breadcrumb.html', {
+            'current': current,
             'breadcrumbs': ancestors,
             'breadcrumb_between_char': between_char,
         }, context_instance=template.RequestContext(context.get('request', HttpRequest())))
