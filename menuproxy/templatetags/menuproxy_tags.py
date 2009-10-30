@@ -158,11 +158,13 @@ class BreadcrumbNode(template.Node):
         between_char = get_value(self.between_char, context)
         
         if 'menuproxy_breadcrumb' is context:
+            current = None
             ancestors = context['menuproxy_breadcrumb']
         else:
             current_rule = get_value(self.current_rule, context)
             current_obj = get_value(self.current_obj, context)
             if current_rule is None:
+                current = None
                 ancestors = []
             else:
                 current = MenuItem(current_rule, current_obj)
