@@ -48,9 +48,11 @@ class MenuNode(template.Node):
             keys = [(ancestor.name, ancestor.obj)
                 for ancestor in current.ancestors_for_menu()]
 
-        if self.mode == 'auto' and target.obj is not None:
+        if self.mode == 'auto':
             lasy = (target.name, target.obj) not in keys
         else:
+            lasy = False
+        if target.name == target.settings.root['name'] and target.obj is None:
             lasy = False
 
         children = target.children(lasy)

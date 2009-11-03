@@ -38,7 +38,7 @@ class Catalog(models.Model):
         return reverse('catalog', kwargs={'object_id': self.pk})
 
     def __unicode__(self):
-        return self.pk
+        return unicode(self.pk)
 
     def get_ancestors(self):
         ancestors = []
@@ -64,4 +64,4 @@ class News(models.Model):
         return reverse('news', kwargs={'object_id': self.pk})
 
     def __unicode__(self):
-        return self.pk
+        return unicode(self.pk)
