@@ -81,7 +81,7 @@ register.tag('show_main_menu_for_proxy', show_menu)
 register.tag('show_full_menu_for_proxy', show_menu)
 register.tag('show_auto_menu_for_proxy', show_menu)
 
-class MakeBreadcrumbNode(template.Node):
+class MakeBreadcrumbsNode(template.Node):
     def __init__(self, current_rule=None, current_obj=None):
         self.current_rule = current_rule
         self.current_obj = current_obj
@@ -98,11 +98,11 @@ class MakeBreadcrumbNode(template.Node):
         return u''
 
 @register.tag
-def make_breadcrumb(parser, token):
+def make_breadcrumbs(parser, token):
     splited = token.split_contents()
     if len(splited) - 1 > 2:
         raise template.TemplateSyntaxError, "%r tag requires maximum  2 arguments: current_rule current_obj" % splited[0]
-    return MakeBreadcrumbNode(*splited[1:])
+    return MakeBreadcrumbsNode(*splited[1:])
 
 class ActionBreadcrumbNode(template.Node):
     def __init__(self, tag_name, title, url):
@@ -114,11 +114,11 @@ class ActionBreadcrumbNode(template.Node):
         title = get_value(self.title, context)
         url = get_value(self.url, context)
         item = [{'title': title, 'url': url}]
-        menuproxy_breadcrumb = context.get('menuproxy_breadcrumbs', [])
+        menuproxy_breadcrumbs = context.get('menuproxy_breadcrumbs', [])
         if self.tag_name == 'append_breadcrumb':
-            context['menuproxy_breadcrumbs'] = menuproxy_breadcrumb + item
-        else:
-            context['menuproxy_breadcrumbs'] = item + menuproxy_breadcrumb
+            context['menuproxy_breadcrumbs'] = menuproxy_breadcrumbs + item
+        elif self.tag_name == 'prepend_breadcrumb':
+            context['menuproxy_breadcrumbs'] = item + menuproxy_breadcrumbs
         return u''
 
 def action_breadcrumb(parser, token):
@@ -148,7 +148,7 @@ def pop_breadcrumb(parser, token):
     return PopNode(*splited[1:])
 
 
-class BreadcrumbNode(template.Node):
+class BreadcrumbsNode(template.Node):
     def __init__(self, current_rule=None, current_obj=None, between_char='" →"'):
         self.current_rule = current_rule
         self.current_obj = current_obj
@@ -170,7 +170,7 @@ class BreadcrumbNode(template.Node):
                 current = MenuItem(current_rule, current_obj)
                 ancestors = current.ancestors()
 
-        return render_to_string('menuproxy/breadcrumb.html', {
+        return render_to_string('menuproxy/breadcrumbs.html', {
             'current': current,
             'breadcrumbs': ancestors,
             'breadcrumb_between_char': between_char,
@@ -182,4 +182,4 @@ def show_breadcrumbs(parser, token):
     splited = token.split_contents()
     if len(splited) - 1 > 3:
         raise template.TemplateSyntaxError, "%r tag requires maximum 3 arguments: current_rule current_obj between_char" % splited[0]
-    return BreadcrumbNode(*splited[1:])
+    return BreadcrumbsNode(*splited[1:])
