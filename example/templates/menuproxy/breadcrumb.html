@@ -1,0 +1,5 @@
+{% if breadcrumbs %}
+<ul>
+{% for breadcrumb in breadcrumbs %}<li>{% if breadcrumb.url %}<a href="{{ breadcrumb.url }}">{{ breadcrumb.title }}</a>{% if not forloop.last %}+{% endif %}
+{% else %}{{ breadcrumb.title }}{% if not forloop.last %}+{% endif %}</li>
+{% endif %}{% endfor %}</ul>{% endif %}

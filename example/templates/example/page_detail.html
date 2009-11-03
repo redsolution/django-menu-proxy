@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% load menuproxy_tags %}
+
+{% block main %}{% show_main_menu 'page' object %}{% endblock %}
+{% block auto %}{% show_auto_menu 'page' object %}{% endblock %}
+{% block full %}{% show_full_menu 'page' object %}{% endblock %}
+{% block breadcrumbs %}{% show_breadcrumbs 'page' object %}{% endblock %}
+{% block content %}{{ object.text }}{% endblock %}

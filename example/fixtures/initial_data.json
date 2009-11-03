@@ -1,0 +1,25 @@
+[
+{"pk": 1, "model": "example.page", "fields": {"text": "Index text", "slug": "index", "parent": null, "title": "Index"}},
+{"pk": 2, "model": "example.page", "fields": {"text": "News text", "slug": "news", "parent": null, "title": "News"}},
+{"pk": 3, "model": "example.page", "fields": {"text": "Catalog text", "slug": "catalog", "parent": null, "title": "Catalog"}},
+{"pk": 4, "model": "example.page", "fields": {"text": "About text", "slug": "about", "parent": null, "title": "About"}},
+{"pk": 5, "model": "example.page", "fields": {"text": "Search text", "slug": "search", "parent": null, "title": "Search"}},
+
+{"pk": 11, "model": "example.page", "fields": {"text": "Sub index text", "slug": "sub_index", "parent": 1, "title": "Sub index"}},
+{"pk": 21, "model": "example.page", "fields": {"text": "Sub news text", "slug": "sub_news", "parent": 2, "title": "Sub news"}},
+{"pk": 31, "model": "example.page", "fields": {"text": "Sub catalog text", "slug": "sub_catalog", "parent": 3, "title": "Sub catalog"}},
+{"pk": 41, "model": "example.page", "fields": {"text": "Sub about text", "slug": "sub_about", "parent": 4, "title": "Sub about"}},
+{"pk": 51, "model": "example.page", "fields": {"text": "Sub search text", "slug": "sub_search", "parent": 5, "title": "Sub search"}},
+
+{"pk": 1, "model": "example.catalog", "fields": {"visible": true, "parent": null, "title": "Item-1"}},
+{"pk": 2, "model": "example.catalog", "fields": {"visible": false, "parent": null, "title": "Item-2"}},
+{"pk": 3, "model": "example.catalog", "fields": {"visible": true, "parent": null, "title": "Item-3"}},
+{"pk": 31, "model": "example.catalog", "fields": {"visible": true, "parent": 3, "title": "Item-4"}},
+{"pk": 311, "model": "example.catalog", "fields": {"visible": true, "parent": 31, "title": "Item-5"}},
+{"pk": 3111, "model": "example.catalog", "fields": {"visible": true, "parent": 3111, "title": "Item-6"}},
+{"pk": 4, "model": "example.catalog", "fields": {"visible": true, "parent": null, "title": "Item-7"}},
+
+{"pk": 1, "model": "example.news", "fields": {"text": "News-1"}},
+{"pk": 2, "model": "example.news", "fields": {"text": "News-2"}},
+{"pk": 3, "model": "example.news", "fields": {"text": "News-3"}}
+]

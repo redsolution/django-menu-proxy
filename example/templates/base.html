@@ -1,0 +1,6 @@
+{% load menuproxy_tags %}<style>.C{font-weight:bold;}.A{text-decoration:underline;}.F{border-top:solid 1px;}.L{border-bottom:solid 1px;}</style>
+<h1>MAIN:</h1>{% block main %}{% show_main_menu %}{% endblock %}
+<h1>AUTO:</h1>{% block auto %}{% show_auto_menu %}{% endblock %}
+<h1>FULL:</h1>{% block full %}{% show_full_menu %}{% endblock %}
+<h1>BREAD:</h1>{% block breadcrumbs %}{% show_breadcrumbs %}{% endblock %}
+<h1>CONTENT:</h1>{% block content %}content{% endblock %}

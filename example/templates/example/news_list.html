@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% load menuproxy_tags %}
+
+{% block main %}{% show_main_menu 'archive' %}{% endblock %}
+{% block auto %}{% show_auto_menu 'archive' %}{% endblock %}
+{% block full %}{% show_full_menu 'archive' %}{% endblock %}
+{% block breadcrumbs %}{% show_breadcrumbs 'archive' %}{% endblock %}
+{% block content %}{% for object in object_list %}{{ object.id }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endblock %}
