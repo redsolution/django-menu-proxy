@@ -94,7 +94,7 @@ class MakeBreadcrumbNode(template.Node):
         else:
             current = MenuItem(current_rule, current_obj)
             ancestors = current.ancestors()
-        context['menuproxy_breadcrumb'] = ancestors
+        context['menuproxy_breadcrumbs'] = ancestors
         return u''
 
 @register.tag
@@ -111,14 +111,14 @@ class ActionBreadcrumbNode(template.Node):
         self.url = url
 
     def render(self, context):
-        title = get_value(self.title)
-        url = get_value(self.url)
+        title = get_value(self.title, context)
+        url = get_value(self.url, context)
         item = [{'title': title, 'url': url}]
-        menuproxy_breadcrumb = context.get('menuproxy_breadcrumb', [])
+        menuproxy_breadcrumb = context.get('menuproxy_breadcrumbs', [])
         if self.tag_name == 'append_breadcrumb':
-            context['menuproxy_breadcrumb'] = item + menuproxy_breadcrumb
+            context['menuproxy_breadcrumbs'] = menuproxy_breadcrumb + item
         else:
-            context['menuproxy_breadcrumb'] = menuproxy_breadcrumb + item
+            context['menuproxy_breadcrumbs'] = item + menuproxy_breadcrumb
         return u''
 
 def action_breadcrumb(parser, token):
@@ -136,7 +136,7 @@ class PopBreadcrumbNode(template.Node):
 
     def render(self, context):
         count = get_value(self.count)
-        context['menuproxy_breadcrumb'] = context.get('menuproxy_breadcrumb', [])[:-count]
+        context['menuproxy_breadcrumbs'] = context.get('menuproxy_breadcrumbs', [])[:-count]
         return u''
 
 
@@ -157,9 +157,9 @@ class BreadcrumbNode(template.Node):
     def render(self, context):
         between_char = get_value(self.between_char, context)
         
-        if 'menuproxy_breadcrumb' is context:
+        if 'menuproxy_breadcrumbs' in context:
             current = None
-            ancestors = context['menuproxy_breadcrumb']
+            ancestors = context['menuproxy_breadcrumbs']
         else:
             current_rule = get_value(self.current_rule, context)
             current_obj = get_value(self.current_obj, context)
