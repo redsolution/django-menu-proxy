@@ -62,10 +62,12 @@ class MenuNode(template.Node):
             if current is not None and (child.name, child.obj) == (current.name, current.obj):
                 child.current = True
 
+        menuproxy_level = context.get('menuproxy_level', -1) + 1
         return render_to_string('menuproxy/%s_menu.html' % self.mode, {
             'children': children,
             'current': current,
             'target': target,
+            'menuproxy_level': menuproxy_level,
         }, context_instance=template.RequestContext(context.get('request', HttpRequest())))
 
 

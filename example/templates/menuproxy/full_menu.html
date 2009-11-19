@@ -1,4 +1,4 @@
 {% load menuproxy_tags %}{% if children %}
 <ul>
-{% for child in children %}<li><a class="{% if forloop.first %}F {% endif %}{% if forloop.last %}L {% endif %}{% if child.active %}A {% endif %}{% if child.current %}C {% endif %}" href="{{ child.url }}">{{ child.title }}</a>{% show_full_menu_for_proxy current child %}</li>
+{% for child in children %}<li><a class="{% if forloop.first %}F {% endif %}{% if forloop.last %}L {% endif %}{% if child.active %}A {% endif %}{% if child.current %}C {% endif %}" href="{{ child.url }}">{{ menuproxy_level }}: {{ child.title }}</a>{% show_full_menu_for_proxy current child %}</li>
 {% endfor %}</ul>{% endif %}
