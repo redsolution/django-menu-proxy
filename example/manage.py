@@ -6,6 +6,7 @@ parent_dir = os.path.dirname(example_dir)
 sys.path[0:0] = [
     example_dir,
     parent_dir,
+    os.path.join(os.path.dirname(parent_dir), 'django'),
 ]
 
 from django.core.management import execute_manager
