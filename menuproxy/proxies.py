@@ -85,7 +85,7 @@ class ReverseProxy(MenuProxy):
     def title(self, obj):
         u"""Возвращает заголовок элемента"""
         if self.get_title is None:
-            return self.title
+            return self.title_text
         from importpath import importpath
         title = importpath(self.get_title)
         if callable(title):

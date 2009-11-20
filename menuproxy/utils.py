@@ -48,15 +48,19 @@ class MenuSettings(object):
     METHODS = (
         'root', # Указывает корневое дерево для построения меню
         'instead', # Указывает, что объект point следует заменить объектом object
-        'append', # Указывает, что к списку дочерних элементов для point нужно добавить дочерние элементы object-а 
-        'prepend', # Указывает, что перед списком дочерних элементов для point нужно вставить дочерние элементы object-а
+        'append_this', # Указывает, что к списку дочерних элементов для point нужно добавить элемент object 
+        'prepend_this', # Указывает, что перед списком дочерних элементов для point нужно вставить элемент object
+        'append_children', # Указывает, что к списку дочерних элементов для point нужно добавить дочерние элементы object-а 
+        'prepend_children', # Указывает, что перед списком дочерних элементов для point нужно вставить дочерние элементы object-а
     )
     
     def __init__(self):
         self.root = None
         self.instead = {}
-        self.append = {}
-        self.prepend = {}
+        self.append_this = {}
+        self.prepend_this = {}
+        self.append_children = {}
+        self.prepend_children = {}
         self.rules = {}
         
         for name, rule in getattr(conf.settings, 'MENU_PROXY_RULES', {}).iteritems():
@@ -202,22 +206,34 @@ class MenuItem(object):
             return getattr(self, '_children')
         
         key = (self.name, self.obj)
-        prepend = self.settings.prepend
-        append = self.settings.append
         children = []
-        if key in prepend:
+        if key in self.settings.prepend_children:
             children += [
-                MenuItem(prepend[key]['name'], item) for item in get_children(
-                    prepend[key]['proxy'], prepend[key]['object'], lasy)
+                MenuItem(self.settings.prepend_children[key]['name'], item) 
+                    for item in get_children(
+                        self.settings.prepend_children[key]['proxy'], 
+                        self.settings.prepend_children[key]['object'], lasy)
+            ]
+        if key in self.settings.prepend_this:
+            children += [
+                MenuItem(
+                    self.settings.prepend_this[key]['name'],
+                    self.settings.prepend_this[key]['object'])
             ]
         children += [
             MenuItem(self.name, item) for item in get_children(
                 self.settings.rules[self.name]['proxy'], self.obj, lasy)
         ]
-        if key in append:
+        if key in self.settings.append_this:
             children += [
-                MenuItem(append[key]['name'], item) for item in get_children(
-                    append[key]['proxy'], append[key]['object'], lasy)
+                MenuItem(
+                    self.settings.append_this[key]['name'],
+                    self.settings.append_this[key]['object'])
+            ]
+        if key in self.settings.append_children:
+            children += [
+                MenuItem(self.settings.append_children[key]['name'], item) for item in get_children(
+                    self.settings.append_children[key]['proxy'], self.settings.append_children[key]['object'], lasy)
             ]
 
         setattr(self, '_children', children)
