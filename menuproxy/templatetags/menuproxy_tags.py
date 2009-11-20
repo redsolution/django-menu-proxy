@@ -4,17 +4,17 @@ from django import template
 from django.http import HttpRequest
 from django.template.loader import render_to_string
 
-from menuproxy.utils import *
+from menuproxy.utils import MenuItem, DoesNotDefined
 
 register = template.Library()
 
-def get_value(string, context):
+def get_value(string, context, default=None):
     if string is None:
-        return None
+        return default
     try:
         return template.Variable(string).resolve(context)
     except template.VariableDoesNotExist:
-        return None
+        return default
 
 
 class MenuNode(template.Node):
@@ -29,37 +29,37 @@ class MenuNode(template.Node):
     def render(self, context):
         if self.proxy:
             current = get_value(self.current_rule, context)
-            target = get_value(self.current_obj, context)
+            target = get_value(self.current_obj, context, DoesNotDefined)
         else:
             current_rule = get_value(self.current_rule, context)
-            current_obj = get_value(self.current_obj, context)
+            current_obj = get_value(self.current_obj, context, DoesNotDefined)
             if current_rule is None:
-                current = None
+                current = DoesNotDefined
             else:
                 current = MenuItem(current_rule, current_obj)
 
             target_rule = get_value(self.target_rule, context)
-            target_obj = get_value(self.target_obj, context)
+            target_obj = get_value(self.target_obj, context, DoesNotDefined)
             target = MenuItem(target_rule, target_obj)
 
-        if current is None:
+        if current is DoesNotDefined:
             keys = []
         else:
-            keys = [(ancestor.name, ancestor.obj)
+            keys = [(ancestor.name, ancestor.object)
                 for ancestor in current.ancestors_for_menu()]
 
         if self.mode == 'auto':
-            lasy = (target.name, target.obj) not in keys
+            lasy = (target.name, target.object) not in keys
         else:
             lasy = False
-        if target.name == target.settings.root['name'] and target.obj is None:
+        if target.name is None and target.object is DoesNotDefined:
             lasy = False
 
         children = target.children(lasy)
         for child in children:
-            if (child.name, child.obj) in keys:
+            if (child.name, child.object) in keys:
                 child.active = True
-            if current is not None and (child.name, child.obj) == (current.name, current.obj):
+            if current is not None and current is not DoesNotDefined and (child.name, child.object) == (current.name, current.object):
                 child.current = True
 
         menuproxy_level = context.get('menuproxy_level', -1) + 1
@@ -149,7 +149,7 @@ def pop_breadcrumb(parser, token):
     splited = token.split_contents()
     if len(splited) - 1 not in [0, 1]:
         raise template.TemplateSyntaxError, "%r tag requires zero or 1 argument: count" % splited[0]
-    return PopNode(*splited[1:])
+    return PopBreadcrumbNode(*splited[1:])
 
 
 class BreadcrumbsNode(template.Node):

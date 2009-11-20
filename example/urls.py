@@ -12,4 +12,6 @@ urlpatterns = patterns('',
         'queryset': News.objects.all(), 'slug_field': 'slug', }, name='news'),
     url(r'^search/$', 'django.views.generic.simple.direct_to_template', {
         'template': 'search.html'}, name='search'),
+    url(r'^result/$', 'django.views.generic.simple.direct_to_template', {
+        'template': 'result.html'}, name='result'),
 )

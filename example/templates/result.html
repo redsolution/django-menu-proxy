@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% load menuproxy_tags %}
+
+{% block main %}{% show_main_menu 'result' %}{% endblock %}
+{% block auto %}{% show_auto_menu 'result' %}{% endblock %}
+{% block full %}{% show_full_menu 'result' %}{% endblock %}
+{% block breadcrumbs %}{% show_breadcrumbs 'result' %}{% endblock %}
+{% block content %}Result{% endblock %}

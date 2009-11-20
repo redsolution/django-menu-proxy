@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.core.urlresolvers import reverse
+from menuproxy.utils import DoesNotDefined
 
 class MenuProxy(object):
     u"""Базовый класс, описывающий метод получения данных из модели для построения меню"""
@@ -12,33 +13,37 @@ class MenuProxy(object):
         self.ancestors_filter = ancestors_filter
         self.ancestors_exclude = ancestors_exclude
     
-    def title(self, obj):
+    def title(self, object):
         u"""Возвращает заголовок элемента"""
-        if obj is None:
+        assert object is not DoesNotDefined, DoesNotDefined
+        if object is None:
             return None
-        if callable(obj.title):
-            return obj.title()
+        if callable(object.title):
+            return object.title()
         else:
-            return obj.title
+            return object.title
 
-    def url(self, obj):
+    def url(self, object):
         u"""Возвращает url элемента"""
-        if obj is None:
+        assert object is not DoesNotDefined, DoesNotDefined
+        if object is None:
             return None
-        return obj.get_absolute_url()
+        return object.get_absolute_url()
 
-    def ancestors(self, obj):
+    def ancestors(self, object, menu_item):
         u"""Возвращает список родительских элементов, начиная с верхнего уровня"""
-        if obj is None:
+        if object is None or object is DoesNotDefined:
             return None
-        return obj.get_ancestors().filter(**self.ancestors_filter).exclude(**self.ancestors_exclude)
+        return object.get_ancestors().filter(**self.ancestors_filter).exclude(**self.ancestors_exclude)
 
-    def children(self, obj):
+    def children(self, object, menu_item):
         u"""Возвращает список дочерних элементов.
-        Если obj == None возвращает список элементов верхнего уровня"""
-        return self.model.objects.filter(parent=obj).filter(**self.children_filter).exclude(**self.children_exclude)
+        Если object == None возвращает список элементов верхнего уровня"""
+        if object is DoesNotDefined:
+            object = None
+        return self.model.objects.filter(parent=object).filter(**self.children_filter).exclude(**self.children_exclude)
     
-    def lasy_children(self, obj):
+    def lasy_children(self, object, menu_item):
         u"""Возвращает список дочерних элементов,
         если объект не содержится в потомках выбранный элемент"""
         return None
@@ -47,16 +52,16 @@ class MenuProxy(object):
 class FlatProxy(MenuProxy):
     u"""Класс, описывающий метод получения данных из не древовидной модели. Отображает все элементы на верхнем уровне"""
 
-    def ancestors(self, obj):
+    def ancestors(self, object, menu_item):
         u"""Возвращает список родительских элементов, начиная с верхнего уровня"""
         return None
 
-    def children(self, obj):
+    def children(self, object, menu_item):
         u"""Возвращает список дочерних элементов.
-        Если obj == None возвращает список элементов первого уровня.
+        Если object == None возвращает список элементов первого уровня.
         force == False только при построении разворачивающегося меню и
         только для элементов, не содержащих в потомках выбранный элемент"""
-        if obj is None:
+        if object is None or object is DoesNotDefined:
             return self.model.objects.filter(**self.children_filter).exclude(**self.children_exclude)
         else:
             return None
@@ -64,25 +69,30 @@ class FlatProxy(MenuProxy):
 class EmptyProxy(MenuProxy):
     u"""Класс, возвращающий пустой список дочерних и родительских элементов"""
 
-    def ancestors(self, obj):
+    def ancestors(self, object, menu_item):
         u"""Возвращает список родительских элементов, начиная с верхнего уровня"""
         return None
 
-    def children(self, obj):
+    def children(self, object, menu_item):
         u"""Возвращает список дочерних элементов.
-        Если obj == None возвращает список элементов первого уровня"""
+        Если object == None возвращает список элементов первого уровня"""
         return None
 
 class ReverseProxy(MenuProxy):
     u"""Класс, описывающий метод получения данных из модели pages-cms"""
 
-    def __init__(self, title_text=None, get_title=None, args=[], kwargs={}, **other):
+    def __init__(self, viewname, title_text=None, get_title=None,
+        args=None, kwargs=None, prefix=None, current_app=None, **other):
+
+        self.viewname = viewname
         self.title_text = title_text
         self.get_title = get_title
         self.args = args
         self.kwargs = kwargs
+        self.prefix = prefix
+        self.current_app = current_app
     
-    def title(self, obj):
+    def title(self, object):
         u"""Возвращает заголовок элемента"""
         if self.get_title is None:
             return self.title_text
@@ -93,15 +103,16 @@ class ReverseProxy(MenuProxy):
         else:
             return title
 
-    def url(self, obj):
+    def url(self, object):
         u"""Возвращает url элемента"""
-        return reverse(*self.args, **self.kwargs)
+        return reverse(viewname=self.viewname, args=self.args, kwargs=self.kwargs,
+            prefix=self.prefix, current_app=self.current_app)
 
-    def ancestors(self, obj):
+    def ancestors(self, object, menu_item):
         u"""Возвращает список родительских элементов, начиная с верхнего уровня"""
         return None
 
-    def children(self, obj):
+    def children(self, object, menu_item):
         u"""Возвращает список дочерних элементов.
-        Если obj == None возвращает список элементов верхнего уровня"""
+        Если object == None возвращает список элементов верхнего уровня"""
         return None

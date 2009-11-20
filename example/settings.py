@@ -31,39 +31,53 @@ INSTALLED_APPS = (
 )
 
 # MenuProxy settings
-MENU_PROXY_RULES = {}
-MENU_PROXY_RULES['page'] = {
-    'method': 'root',
-    'proxy': 'menuproxy.proxies.MenuProxy',
-    'model': 'example.models.Page',
-}
-MENU_PROXY_RULES['catalog'] = {
-    'method': 'append',
-    'inside': 'page',
-    'point': 'example.points.get_catalog_page',
-    'proxy': 'menuproxy.proxies.MenuProxy',
-    'model': 'example.models.Catalog',
-    'children_filter': {'visible': True, },
-}
-MENU_PROXY_RULES['archive'] = {
-    'method': 'instead',
-    'inside': 'page',
-    'point': 'example.points.get_news_page',
-    'proxy': 'menuproxy.proxies.ReverseProxy',
-    'args': ['archive', ],
-    'get_title': 'example.points.get_news_name',
-}
-MENU_PROXY_RULES['news'] = {
-    'method': 'append',
-    'inside': 'archive',
-    'proxy': 'menuproxy.proxies.FlatProxy',
-    'model': 'example.models.News',
-}
-MENU_PROXY_RULES['search'] = {
-    'method': 'instead',
-    'inside': 'page',
-    'point': 'example.points.get_search_page',
-    'proxy': 'menuproxy.proxies.ReverseProxy',
-    'args': ['search', ],
-    'get_title': 'example.points.get_search_name',
-}
+MENU_PROXY_RULES = [
+    {
+        'name': 'page',
+        'method': 'children',
+        'proxy': 'menuproxy.proxies.MenuProxy',
+        'model': 'example.models.Page',
+    },
+    {
+        'name': 'catalog',
+        'method': 'children',
+        'proxy': 'menuproxy.proxies.MenuProxy',
+        'inside': 'page',
+        'point': 'example.points.get_catalog_page',
+        'model': 'example.models.Catalog',
+        'children_filter': {'visible': True, },
+    },
+    {
+        'name': 'archive',
+        'method': 'replace',
+        'inside': 'page',
+        'point': 'example.points.get_news_page',
+        'proxy': 'menuproxy.proxies.ReverseProxy',
+        'viewname': 'archive',
+        'get_title': 'example.points.get_news_name',
+    },
+    {
+        'name': 'news',
+        'method': 'children',
+        'inside': 'archive',
+        'proxy': 'menuproxy.proxies.FlatProxy',
+        'model': 'example.models.News',
+    },
+    {
+        'name': 'search',
+        'method': 'replace',
+        'inside': 'page',
+        'point': 'example.points.get_search_page',
+        'proxy': 'menuproxy.proxies.ReverseProxy',
+        'viewname': 'search',
+        'get_title': 'example.points.get_search_name',
+    },
+    {
+        'name': 'result',
+        'method': 'insert',
+        'inside': 'search',
+        'proxy': 'menuproxy.proxies.ReverseProxy',
+        'viewname': 'result',
+        'title_text': 'Results',
+    },
+]
