@@ -209,10 +209,14 @@ class MenuItem(object):
         ancestors.append(self)
         return ancestors
 
-    def children(self, lasy):
+    def children(self, lasy=False):
         """Returns children for object"""
-        if hasattr(self, '_children'):
-            return getattr(self, '_children')
+        if lasy:
+            field_name = '_children_lasy'
+        else:
+            field_name = '_children'
+        if hasattr(self, field_name):
+            return getattr(self, field_name)
         
         children = []
         for rule in self.rules[self.name].sequence:
@@ -227,5 +231,5 @@ class MenuItem(object):
                     children += [MenuItem(rule.name, item) for item in get_children(
                         rule.proxy, rule.object, self, lasy)
                     ]
-        setattr(self, '_children', children)
+        setattr(self, field_name, children)
         return children
