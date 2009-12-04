@@ -3,7 +3,7 @@ def get_page_object(slug):
     u"""Возвращает элемент pages со слагом slug"""
     from pages.models import Page
     from pages.settings import PAGE_DEFAULT_LANGUAGE
-    result = Page.objects.from_path('news', PAGE_DEFAULT_LANGUAGE)
+    result = Page.objects.from_path(slug, PAGE_DEFAULT_LANGUAGE)
     if result is not None:
         return result
     return Page.DoesNotExist
@@ -12,7 +12,7 @@ def get_page_title(slug):
     u"""Возвращает заголовок элемент pages со слагом slug"""
     from pages.models import Page
     from pages.settings import PAGE_DEFAULT_LANGUAGE
-    result = Page.objects.from_path('news', PAGE_DEFAULT_LANGUAGE)
+    result = Page.objects.from_path(slug, PAGE_DEFAULT_LANGUAGE)
     if result is not None:
         return result.title()
     return ''
