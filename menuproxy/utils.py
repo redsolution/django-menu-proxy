@@ -24,23 +24,23 @@ def get_url(menu_proxy, object):
         return u''
     return unicode(result)
 
-def get_ancestors(menu_proxy, object, menu_item):
+def get_ancestors(menu_proxy, object):
     """Correct value returned by menu_proxy.ancestors function"""
-    result = menu_proxy.ancestors(object, menu_item)
+    result = menu_proxy.ancestors(object)
     if result is None:
         return []
     return [value for value in result]
 
-def get_children(menu_proxy, object, menu_item, lasy):
+def get_children(menu_proxy, object, lasy):
     """
     Call ``children`` or ``lasy_children`` function for ``menu_proxy``.
-    Pass to it ``object`` and parent ``menu_item``.
+    Pass to it ``object``.
     Correct result.
     """
     if lasy:
-        result = menu_proxy.lasy_children(object, menu_item)
+        result = menu_proxy.lasy_children(object)
     else:
-        result = menu_proxy.children(object, menu_item)
+        result = menu_proxy.children(object)
     if result is None:
         return []
     return [value for value in result]
@@ -107,25 +107,62 @@ class MenuRule(object):
     """Rule"""
     
     def __init__(self, name, method, proxy, rules, inside=None,
-        model=DoesNotDefined, point=DoesNotDefined, object=DoesNotDefined, **other):
+        model=DoesNotDefined, point=DoesNotDefined, object=DoesNotDefined, 
+        point_function=DoesNotDefined, object_function=DoesNotDefined, **other):
 
         self.name = name
         self.method = method
         assert self.method in METHODS, 'menuproxy does`t support method: %s' % self.method
         self.inside = inside
         self.model = try_to_import(model, 'model class')
-        self.point = try_to_import(point, 'mount point function')
+        self.point = try_to_import(point, 'mount point')
         if callable(self.point) and self.point is not DoesNotDefined:
             self.point = self.point()
-        self.object = try_to_import(object, 'mount object function')
+        if self.point is DoesNotDefined:
+            self.point_function = try_to_import(point_function, 'mount point function')
+        else:
+            self.point_function = DoesNotDefined
+        self.object = try_to_import(object, 'mount object')
         if callable(self.object) and self.object is not DoesNotDefined:
             self.object = self.object()
+        if self.object is DoesNotDefined:
+            self.object_function = try_to_import(object_function, 'mount object function')
+        else:
+            self.object_function = DoesNotDefined
         self.proxy = try_to_import(proxy, 'MenuProxy class')
         other.update(self.__dict__)
         if callable(self.proxy) and self.proxy is not DoesNotDefined:
             self.proxy = self.proxy(**other)
         self.rules = rules
         self.sequence = []
+        
+    def _get_point(self, object, forward):
+        if self.point is not DoesNotDefined:
+            return self.point
+        elif self.point_function is not DoesNotDefined:
+            return self.point_function(object, forward)
+        else:
+            return DoesNotDefined
+
+    def _get_object(self, object, forward):
+        if self.object is not DoesNotDefined:
+            return self.object
+        elif self.object_function is not DoesNotDefined:
+            return self.object_function(object, forward)
+        else:
+            return DoesNotDefined
+
+    def forward_point(self, object):
+        return self._get_point(object, True)
+
+    def backward_point(self, object):
+        return self._get_point(object, False)
+
+    def forward_object(self, object):
+        return self._get_object(object, True)
+
+    def backward_object(self, object):
+        return self._get_object(object, False)
 
 
 class MenuItem(object):
@@ -142,8 +179,9 @@ class MenuItem(object):
             self.rules = get_rules()
             for rule in self.rules[name].sequence:
                 if rule.name != name and rule.method == 'replace':
-                    if rule.point is DoesNotDefined or rule.point == object:
-                        self.name, self.object =  rule.name, rule.object
+                    point = rule.forward_point(object)
+                    if point is DoesNotDefined or point == object:
+                        self.name, self.object =  rule.name, rule.forward_object(object)
                         break
             else:
                 self.name, self.object =  name, object
@@ -174,14 +212,14 @@ class MenuItem(object):
         name = self.name
         object = self.object
         while True:
-            until = self.rules[name].object
-            items = get_ancestors(self.rules[name].proxy, object, self)
+            items = get_ancestors(self.rules[name].proxy, object)
+            until = self.rules[name].backward_object(object)
             items.reverse()
             for item in items:
                 ancestors.insert(0, MenuItem(name, item))
                 if item == until:
                     break
-            method, object, name = self.rules[name].method, self.rules[name].point, self.rules[name].inside
+            method, object, name = self.rules[name].method, self.rules[name].backward_point(object), self.rules[name].inside
             if name is None:
                 break
             if method != 'replace':
@@ -220,16 +258,18 @@ class MenuItem(object):
         
         children = []
         for rule in self.rules[self.name].sequence:
+            point = rule.forward_point(self.object)
             if rule.name == self.name:
                 children += [MenuItem(self.name, item) for item in get_children(
-                    self.rules[self.name].proxy, self.object, self, lasy)
+                    self.rules[self.name].proxy, self.object, lasy)
                 ]
-            elif rule.point is DoesNotDefined or rule.point == self.object:
+            elif point is DoesNotDefined or point == self.object:
+                object = rule.forward_object(self.object)
                 if rule.method == 'insert' and not lasy:
-                    children += [MenuItem(rule.name, rule.object)]
+                    children += [MenuItem(rule.name, object)]
                 elif rule.method == 'children':
                     children += [MenuItem(rule.name, item) for item in get_children(
-                        rule.proxy, rule.object, self, lasy)
+                        rule.proxy, object, lasy)
                     ]
         setattr(self, field_name, children)
         return children
