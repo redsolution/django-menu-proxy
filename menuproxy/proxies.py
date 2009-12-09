@@ -82,7 +82,7 @@ class ReverseProxy(MenuProxy):
     u"""Класс, описывающий метод получения данных из модели pages-cms"""
 
     def __init__(self, viewname, title_text=None, get_title=None,
-        args=None, kwargs=None, prefix=None, current_app=None, **other):
+        args=None, kwargs=None, prefix=None, **other):
 
         self.viewname = viewname
         self.title_text = title_text
@@ -90,7 +90,6 @@ class ReverseProxy(MenuProxy):
         self.args = args
         self.kwargs = kwargs
         self.prefix = prefix
-        self.current_app = current_app
     
     def title(self, object):
         u"""Возвращает заголовок элемента"""
@@ -106,7 +105,7 @@ class ReverseProxy(MenuProxy):
     def url(self, object):
         u"""Возвращает url элемента"""
         return reverse(viewname=self.viewname, args=self.args, kwargs=self.kwargs,
-            prefix=self.prefix, current_app=self.current_app)
+            prefix=self.prefix)
 
     def ancestors(self, object, menu_item):
         u"""Возвращает список родительских элементов, начиная с верхнего уровня"""
