@@ -1,0 +1,2 @@
+recursive-include menuproxy *.py
+recursive-include menuproxy *.html

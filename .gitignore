@@ -1,9 +1,9 @@
 .svn
-*.bat
 *.orig
 *.pyc
-*.sh
-*.sql
 .project
 .pydevproject
 .settings
+*.egg-info
+dist/
+build/
