@@ -18,6 +18,8 @@ class MenuProxy(object):
         assert object is not DoesNotDefined, DoesNotDefined
         if object is None:
             return None
+        if not hasattr(object, 'title'):
+            return unicode(object)
         if callable(object.title):
             return object.title()
         else:
