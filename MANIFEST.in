@@ -1,2 +1,2 @@
-recursive-include menuproxy *.py
-recursive-include menuproxy *.html
+recursive-include menuproxy *
+exclude *.orig *.pyc
