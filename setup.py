@@ -15,7 +15,7 @@ setup(
     description=("Django menu proxy" +
         " with RedsolutionCMS integration"),
     license="LGPL",
-    keywords="django hex file system storage",
+    keywords="django menu",
 
     author="Alexander Ivanov",
     author_email="alexander.ivanov@redsolution.ru",
