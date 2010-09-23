@@ -1,0 +1,22 @@
+{% load redsolutioncms_tags %}{% start_block %} extends '{{ cms_settings.base_template }}' {% end_block %}
+{% raw %}{% load menuproxy_tags %}
+{% block center %}
+    <div id="breadcrumbs">{% block breadcrumbs %}{% show_breadcrumbs %}{% endblock %}</div>
+    {{ block.super }}
+{% endblock center %}
+
+{% block left %}
+    <div id="auto-menu">{% block auto_menu %}{% show_auto_menu %}{% endblock %}</div>
+    {{ block.super }}
+{% endblock left %}
+
+{% block right %}
+    <div id="full-menu">{% block full_menu %}{% show_full_menu %}{% endblock %}</div>
+    {{ block.super }}
+{% endblock right %}
+
+{% block top %}
+    <div id="main-menu">{% block main_menu %}{% show_main_menu %}{% endblock %}</div>
+    {{ block.super }}
+{% endblock top %}
+{% endraw %}

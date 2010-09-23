@@ -1,3 +1,6 @@
-# django-easy-news
+# ------------  django-menuproxy ----------------
 INSTALLED_APPS += ['menuproxy']
-MENU_PROXY_RULES = []
+try:
+    MENU_PROXY_RULES
+except NameError:
+    MENU_PROXY_RULES = []
