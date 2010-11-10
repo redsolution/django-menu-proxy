@@ -7,14 +7,16 @@ from setuptools import setup, find_packages
 # README file and 2) it's easier to type in the README file than to put a raw
 # string in below ...
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    try:
+        return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    except IOError:
+        return ''
 
 setup(
     name="redsolutioncms.django-menu-proxy",
     version="0.1.0",
-    description=("Django menu proxy" +
-        " with RedsolutionCMS integration"),
-    license="LGPL",
+    description=read('DESCRIPTION'),
+    license="GPLv3",
     keywords="django menu",
 
     author="Alexander Ivanov",
@@ -36,7 +38,7 @@ setup(
         'Programming Language :: Python',
         'Topic :: Internet :: WWW/HTTP :: Site Management',
     ],
-    packages=find_packages(),
+    packages=find_packages(exclude=['example', 'example.*']),
     install_requires=[],
     include_package_data=True,
     zip_safe=False,

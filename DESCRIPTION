@@ -1,0 +1,3 @@
+MenuProxy allows you to build dynamic menu on site using different models.
+For example, you can combine flatpages, hardlinked views and news sorted by date
+in site menu. Menu will be updated dynamically, respectively, the structure of objects.
