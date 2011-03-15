@@ -25,7 +25,7 @@ class MenuNode(template.Node):
         self.target_rule = target_rule
         self.target_obj = target_obj
         self.proxy = proxy
-        
+
     def render(self, context):
         if self.proxy:
             current = get_value(self.current_rule, context)
@@ -77,7 +77,7 @@ def show_menu(parser, token):
     if len(splited) - 1 > 4:
         raise template.TemplateSyntaxError, "%r tag requires maximum 4 arguments: current_rule current_obj target_rule target_obj" % splited[0]
     return MenuNode(*splited, **{'proxy': splited[0].endswith('for_proxy')})
-    
+
 register.tag('show_main_menu', show_menu)
 register.tag('show_full_menu', show_menu)
 register.tag('show_auto_menu', show_menu)
@@ -139,7 +139,7 @@ class PopBreadcrumbNode(template.Node):
         self.count = count
 
     def render(self, context):
-        count = get_value(self.count)
+        count = int(self.count)
         context['menuproxy_breadcrumbs'] = context.get('menuproxy_breadcrumbs', [])[:-count]
         return u''
 
@@ -160,7 +160,7 @@ class BreadcrumbsNode(template.Node):
 
     def render(self, context):
         between_char = get_value(self.between_char, context)
-        
+
         if 'menuproxy_breadcrumbs' in context:
             current = None
             ancestors = context['menuproxy_breadcrumbs']
