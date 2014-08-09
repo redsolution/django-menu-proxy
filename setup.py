@@ -14,7 +14,7 @@ def read(fname):
 
 setup(
     name="redsolutioncms.django-menu-proxy",
-    version="0.1.1",
+    version="0.1.2",
     description=read('DESCRIPTION'),
     license="GPLv3",
     keywords="django menu",
