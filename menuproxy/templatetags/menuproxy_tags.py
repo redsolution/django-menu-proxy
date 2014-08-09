@@ -12,9 +12,12 @@ def get_value(string, context, default=None):
     if string is None:
         return default
     try:
-        return template.Variable(string).resolve(context)
+        result = template.Variable(string).resolve(context)
     except template.VariableDoesNotExist:
         return default
+    if isinstance(result, DoesNotDefined):
+        return DoesNotDefined
+    return result
 
 
 class MenuNode(template.Node):
